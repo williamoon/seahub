@@ -160,7 +160,7 @@ define([
                                     popup.fileupload('option', 'maxChunkSize', block_size);
                                     $.ajax({
                                         url: Common.getUrl({
-                                            name: 'get_file_uploaded_bytes',
+                                            name: 'repo_file_uploaded_bytes',
                                             repo_id: dirents.repo_id
                                         }),
                                         data: {
