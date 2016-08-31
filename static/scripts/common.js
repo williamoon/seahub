@@ -45,10 +45,11 @@ require.config({
         'js.cookie': 'lib/js.cookie',
 
         simplemodal: 'lib/jquery.simplemodal',
-        jstree: 'lib/jstree.1.0',
+        jstree: 'lib/jstree.min',
         select2: 'lib/select2-3.5.2',
         moment: 'lib/moment-with-locales',
         marked: 'lib/marked.min',
+        sha1: 'lib/crypto-js.sha1',
 
         underscore: 'lib/underscore',
         backbone: 'lib/backbone',
