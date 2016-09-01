@@ -3,10 +3,11 @@ define([
     'underscore',
     'backbone',
     'common',
+    'js.cookie',
     'app/collections/repos',
     'app/views/repo',
     'app/views/add-repo',
-], function($, _, Backbone, Common, RepoCollection, RepoView, AddRepoView) {
+], function($, _, Backbone, Common, Cookies, RepoCollection, RepoView, AddRepoView) {
     'use strict';
 
     var ReposView = Backbone.View.extend({
@@ -49,12 +50,15 @@ define([
                 this.$emptyTip.hide();
                 this.renderReposHd();
                 this.$tableBody.empty();
+                this.sortRepos();
                 this.repos.each(this.addOne, this);
                 this.$table.show();
             } else {
                 this.$table.hide();
                 this.$emptyTip.show();
             }
+
+            this.updateSortIconByMode();
 
             if (app.pageOptions.guide_enabled) {
                 $('#guide-for-new').modal({appendTo: '#main', focus:false});
@@ -114,47 +118,91 @@ define([
             new AddRepoView(this.repos);
         },
 
-        sortByName: function() {
-            $('.by-time .sort-icon').hide();
-            var repos = this.repos;
-            var $el = $('.by-name .sort-icon', this.$table);
-            if ($el.hasClass('icon-caret-up')) {
-                repos.comparator = function(a, b) { // a, b: model
-                    var result = Common.compareTwoWord(a.get('name'), b.get('name'));
-                    return -result;
-                };
+        updateSortIconByMode: function() {
+            var sort_mode = app.pageOptions.sort_mode;
+
+            // first hide all icon
+            this.$('.by-name .sort-icon, .by-time .sort-icon').hide();
+
+            // show icon according sort mode
+            if (sort_mode == 'name_down') {
+                this.$('.by-name .sort-icon').removeClass('icon-caret-up').addClass('icon-caret-down').show();
+            } else if (sort_mode == 'name_up') {
+                this.$('.by-name .sort-icon').removeClass('icon-caret-down').addClass('icon-caret-up').show();
+            } else if (sort_mode == 'time_down') {
+                this.$('.by-time .sort-icon').removeClass('icon-caret-up').addClass('icon-caret-down').show();
+            } else if (sort_mode == 'time_up') {
+                this.$('.by-time .sort-icon').removeClass('icon-caret-down').addClass('icon-caret-up').show();
             } else {
-                repos.comparator = function(a, b) { // a, b: model
-                    var result = Common.compareTwoWord(a.get('name'), b.get('name'));
-                    return result;
-                };
+                // if no sort mode, show name up icon
+                this.$('.by-name .sort-icon').removeClass('icon-caret-down').addClass('icon-caret-up').show();
             }
-            repos.sort();
+        },
+
+        sortRepos: function() {
+            var sort_mode = app.pageOptions.sort_mode;
+
+            // set collection comparator
+            this.repos.comparator = function(a, b) {
+                if (sort_mode == 'name_down' || sort_mode == 'name_up') {
+                    // if sort by name
+                    var result = Common.compareTwoWord(a.get('name'), b.get('name'));
+                    if (sort_mode == 'name_down') {
+                        return -result;
+                    } else {
+                        return result;
+                    }
+                } else {
+                    // if sort by time
+                    if (sort_mode == 'time_up') {
+                        return a.get('mtime') < b.get('mtime') ? -1 : 1;
+                    } else {
+                        return a.get('mtime') < b.get('mtime') ? 1 : -1;
+                    }
+                }
+            };
+
+            // sort collection
+            this.repos.sort();
+        },
+
+        sortByName: function() {
+            if (app.pageOptions.sort_mode == 'name_up') {
+                // change sort mode
+                Cookies.set('sort_mode', 'name_down');
+                app.pageOptions.sort_mode = 'name_down';
+            } else {
+                Cookies.set('sort_mode', 'name_up');
+                app.pageOptions.sort_mode = 'name_up';
+            }
+
+            this.updateSortIconByMode();
+            this.sortRepos();
+
             this.$tableBody.empty();
-            repos.each(this.addOne, this);
-            $el.toggleClass('icon-caret-up icon-caret-down').show();
-            repos.comparator = null;
+            this.repos.each(this.addOne, this);
+            this.repos.comparator = null;
+
             return false;
         },
 
         sortByTime: function() {
-            $('.by-name .sort-icon').hide();
-            var repos = this.repos;
-            var $el = $('.by-time .sort-icon', this.$table);
-            if ($el.hasClass('icon-caret-down')) {
-                repos.comparator = function(a, b) { // a, b: model
-                    return a.get('mtime') < b.get('mtime') ? 1 : -1;
-                };
+            if (app.pageOptions.sort_mode == 'time_down') {
+                // change sort mode
+                Cookies.set('sort_mode', 'time_up');
+                app.pageOptions.sort_mode = 'time_up';
             } else {
-                repos.comparator = function(a, b) { // a, b: model
-                    return a.get('mtime') < b.get('mtime') ? -1 : 1;
-                };
+                Cookies.set('sort_mode', 'time_down');
+                app.pageOptions.sort_mode = 'time_down';
             }
-            repos.sort();
+
+            this.updateSortIconByMode();
+            this.sortRepos();
+
             this.$tableBody.empty();
-            repos.each(this.addOne, this);
-            $el.toggleClass('icon-caret-up icon-caret-down').show();
-            repos.comparator = null;
+            this.repos.each(this.addOne, this);
+            this.repos.comparator = null;
+
             return false;
         }
 
